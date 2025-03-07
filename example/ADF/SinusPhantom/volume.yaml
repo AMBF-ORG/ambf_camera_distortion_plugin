@@ -1,0 +1,28 @@
+# AMBF Version: (0.1)
+bodies:
+- BODY volume_anatomical_origin
+joints: []
+volumes: [VOLUME volume]
+high resolution path: meshes/high_res/
+low resolution path: meshes/low_res/
+ignore inter-collision: true
+namespace: /ambf/env/
+VOLUME volume:
+  name: volume
+  parent: volume_anatomical_origin
+  location:
+    position: {x: 0.0 , y: 0.0, z: 0.0}
+    orientation: {r: 0.0, p: 0.0, y: -1.57}
+  scale: 1.0
+  dimensions: {x: 0.19073833600000004, y: 0.2191024420000001, z: 0.2240353363409313}
+  images:
+    path: volume/
+    prefix: plane000
+    format: png
+    count: 545
+BODY volume_anatomical_origin: # This is a dummy body that can be used to represent the anatomical origin for easy reference
+  name: volume_anatomical_origin
+  mass: 0.0
+  location:
+    position: {x: 0.0 , y: 0.0, z: 0.0}
+    orientation: {r: 0.0, p: 0.0, y: 0.0}
