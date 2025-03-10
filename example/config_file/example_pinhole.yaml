@@ -1,0 +1,10 @@
+## Example json file for ambf_camera_distortion_plugin
+## Type: pinhole
+
+Camera Type: pinhole
+Intrinsic Parameters:
+  fx: 800
+  fy: 800
+  cx: 400
+  cy: 300
+Distortion Coefficients: 0.1 -0.15 0.001 -0.002 0.0005

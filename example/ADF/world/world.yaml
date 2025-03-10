@@ -32,9 +32,9 @@ main_camera:
   plugins: [
     {
       name: camera_distortion_plugin,
-      path: "../build",
-      filename: "lib.so",
-      distortion_config: example/example_distortion_config.yaml
+      path: ../../../build,
+      filename: libambf_camera_distortion_plugin.so,
+      distortion_config: example/config_file/example_fisheye.yaml
     }
   ]
 

@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+
+build
+        // return readConfigFile(m_configPath);
+.vscode

@@ -1,0 +1,10 @@
+## Example json file for ambf_camera_distortion_plugin
+## Type: fisheye
+
+type: fisheye
+intrinsic:
+  fx: 500.0
+  fy: 500.0
+  cx: 320.0
+  cy: 240.0
+distortion_coeffs: [0.01, -0.02, 0.0003, -0.0004]
