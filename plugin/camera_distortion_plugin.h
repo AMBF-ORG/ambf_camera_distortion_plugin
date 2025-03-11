@@ -66,7 +66,7 @@ public:
     virtual void reset() override;
     virtual bool close() override;
 
-    void updateHMDParams();
+    void updateCameraParams();
 
     void makeFullScreen();
 
@@ -76,7 +76,7 @@ protected:
     afCameraPtr m_camera;
     string m_current_filepath;
     cFrameBufferPtr m_frameBuffer;
-    cWorld* m_vrWorld;
+    cWorld* m_distortedWorld;
     cMesh* m_quadMesh;
     int m_width;
     int m_height;
@@ -88,8 +88,7 @@ protected:
     float m_distortion_coeffs[4];
     float m_aberr_scale[3];
     float m_sep;
-    float m_left_lens_center[2];
-    float m_right_lens_center[2];
+    float m_lens_center[2];
     float m_warp_scale;
     float m_warp_adj;
     float m_vpos;

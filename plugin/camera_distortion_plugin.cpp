@@ -62,8 +62,8 @@ afCameraDistortionPlugin::afCameraDistortionPlugin()
     cout << "/*********************************************" << endl;
 
     // For HTC Vive Pro
-    m_width = 2880;
-    m_height = 1600;
+    m_width = 1920;
+    m_height = 1080;
     m_alias_scaling = 1.0;
 }
 
@@ -83,12 +83,12 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
     // If there is no configuration file given
     else{
         cerr << "WARNING! NO configuration file specified." << endl;
-        return 1;
+        return -1;
     }
 
     m_camera->setOverrideRendering(true);
 
-    m_camera->getInternalCamera()->m_stereoOffsetW = 0.1;
+    m_camera->getInternalCamera()->m_stereoOffsetW = 0.0;
 
     m_frameBuffer = cFrameBuffer::create();
     m_frameBuffer->setup(m_camera->getInternalCamera(), m_width * m_alias_scaling, m_height * m_alias_scaling, true, true, GL_RGBA);
@@ -98,8 +98,8 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
 
     afShaderAttributes shaderAttribs;
     shaderAttribs.m_shaderDefined = true;
-    shaderAttribs.m_vtxFilepath = m_current_filepath + "/shaders/hmd_distortion.vs";
-    shaderAttribs.m_fragFilepath = m_current_filepath + "/shaders/hmd_distortion.fs";
+    shaderAttribs.m_vtxFilepath = specificationDataNode["plugins"][0]["vertex_shader"].as<string>();
+    shaderAttribs.m_fragFilepath = specificationDataNode["plugins"][0]["fragment_shader"].as<string>();
 
     m_shaderPgm = afShaderUtils::createFromAttribs(&shaderAttribs, "TEST", "VR_CAM");
     if (!m_shaderPgm){
@@ -107,29 +107,28 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
         return -1;
     }
 
-    m_viewport_scale[0] = 0.122822f;
-    m_viewport_scale[0] /= 2.0;
-    m_viewport_scale[1] = 0.068234f;
+    m_viewport_scale[0] = 1.0;
+    m_viewport_scale[1] = 1.0;
 
-    m_distortion_coeffs[0] = 0.098;
-    m_distortion_coeffs[1] = 0.324;
-    m_distortion_coeffs[2] = -0.241;
-    m_distortion_coeffs[3] = 0.89;
+    if (params.distortion_coefs.empty()) {
+        for (int i = 0; i < 4; i++) {
+            m_distortion_coeffs[i] = params.distortion_coefs[i];
+        }
+    } else {
+        m_distortion_coeffs[0] = 0.0;
+        m_distortion_coeffs[1] = 0.0;
+        m_distortion_coeffs[2] = 0.0;
+        m_distortion_coeffs[3] = 0.0;
+    }
 
     m_aberr_scale[0] = 1.0;
     m_aberr_scale[1] = 1.0;
     m_aberr_scale[2] = 1.0;
 
-    m_sep = 0.057863;
-    m_vpos = 0.033896;
+    m_lens_center[0] = 0.0;
+    m_lens_center[1] = 0.0;     
 
-    m_left_lens_center[0] = m_viewport_scale[0] - m_sep/2.0;
-    m_left_lens_center[1] = m_vpos;
-
-    m_right_lens_center[0] = m_sep/2.0;
-    m_right_lens_center[1] = m_vpos;
-
-    m_warp_scale = (m_left_lens_center[0] > m_right_lens_center[0]) ? m_left_lens_center[0] : m_right_lens_center[0];
+    m_warp_scale = 1.0;
     m_warp_adj = 1.0;
 
     m_quadMesh = new cMesh();
@@ -164,35 +163,35 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
     m_quadMesh->setShaderProgram(m_shaderPgm);
     m_quadMesh->setShowEnabled(true);
 
-    m_vrWorld = new cWorld();
-    m_vrWorld->addChild(m_quadMesh);
+    m_distortedWorld = new cWorld();
+    m_distortedWorld->addChild(m_quadMesh);
 
-    cerr << "INFO! LOADING VR PLUGIN \n";
+    cerr << m_distortion_coeffs[0] << "," << m_distortion_coeffs[1] << "," << m_distortion_coeffs[2] << "," << m_distortion_coeffs[3] << endl;
 
     return 1;
 }
 
 void afCameraDistortionPlugin::graphicsUpdate()
 {
-    static bool first_time = true;
-    // if (first_time) {
-    //     makeFullScreen();
-    //     first_time = false;
-    // }
     glfwMakeContextCurrent(m_camera->m_window);
     m_frameBuffer->renderView();
-    updateHMDParams();
+    updateCameraParams();
+
     afRenderOptions ro;
     ro.m_updateLabels = true;
 
+    // Temporarily switch camera to VR world
     cWorld* cachedWorld = m_camera->getInternalCamera()->getParentWorld();
     m_camera->getInternalCamera()->setStereoMode(C_STEREO_DISABLED);
-    m_camera->getInternalCamera()->setParentWorld(m_vrWorld);
-    static cWorld* ew = new cWorld();
-    cWorld* fl = m_camera->getInternalCamera()->m_frontLayer;
-    m_camera->getInternalCamera()->m_frontLayer = ew;
+    m_camera->getInternalCamera()->setParentWorld(m_distortedWorld);
+
+    // Render only camera feed distortion
+    static cWorld* emptyWorld = new cWorld();
+    cWorld* frontLayer = m_camera->getInternalCamera()->m_frontLayer;
+    m_camera->getInternalCamera()->m_frontLayer = emptyWorld;
     m_camera->render(ro);
-    m_camera->getInternalCamera()->m_frontLayer = fl;
+    m_camera->getInternalCamera()->m_frontLayer = frontLayer;
+
     m_camera->getInternalCamera()->setStereoMode(C_STEREO_PASSIVE_LEFT_RIGHT);
     m_camera->getInternalCamera()->setParentWorld(cachedWorld);
 }
@@ -211,18 +210,17 @@ bool afCameraDistortionPlugin::close()
     return true;
 }
 
-void afCameraDistortionPlugin::updateHMDParams()
+void afCameraDistortionPlugin::updateCameraParams()
 {
     GLint id = m_shaderPgm->getId();
-    //    cerr << "INFO! Shader ID " << id << endl;
+    //    cerr << "INFO! Shader ID " << id << endl; // Shader ID is always 1 in my case
     glUseProgram(id);
     glUniform1i(glGetUniformLocation(id, "warpTexture"), 2);
     glUniform2fv(glGetUniformLocation(id, "ViewportScale"), 1, m_viewport_scale);
     glUniform3fv(glGetUniformLocation(id, "aberr"), 1, m_aberr_scale);
     glUniform1f(glGetUniformLocation(id, "WarpScale"), m_warp_scale*m_warp_adj);
+    glUniform2fv(glGetUniformLocation(id, "LensCenter"), 1, m_lens_center);
     glUniform4fv(glGetUniformLocation(id, "HmdWarpParam"), 1, m_distortion_coeffs);
-    glUniform2fv(glGetUniformLocation(id, "LensCenterLeft"), 1, m_left_lens_center);
-    glUniform2fv(glGetUniformLocation(id, "LensCenterRight"), 1, m_right_lens_center);
 }
 
 void afCameraDistortionPlugin::makeFullScreen()

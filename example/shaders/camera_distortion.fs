@@ -3,6 +3,8 @@
 //per eye texture to warp for lens distortion
 uniform sampler2D warpTexture;
 
+//Position of lens center in m (usually eye_w/2, eye_h/2)
+uniform vec2 LensCenter;
 uniform vec2 ViewportScale;
 //Distortion overall scale in m (usually ~eye_w/2)
 uniform float WarpScale;
@@ -12,15 +14,15 @@ uniform vec4 HmdWarpParam;
 //chromatic distortion post scaling
 uniform vec3 aberr;
 
+
 void main()
-{
-    output_loc[0] = (output_loc[0] - offset) * 2.0;
+{   
+    // output_loc[0] = (output_loc[0] - offset) * 2.0;
     //Compute fragment location in lens-centered coordinates at world scale
-	  vec2 r = output_loc * ViewportScale - LensCenter;
+    vec2 r = output_loc * ViewportScale - LensCenter;
     //scale for distortion model
     //distortion model has r=1 being the largest circle inscribed (e.g. eye_w/2)
     r /= WarpScale;
-
     //|r|**2
     float r_mag = length(r);
     //offset for which fragment is sourced
@@ -34,14 +36,14 @@ void main()
     vec2 tc_g = (LensCenter + aberr.g * r_displaced) / ViewportScale;
     vec2 tc_b = (LensCenter + aberr.b * r_displaced) / ViewportScale;
 
-    tc_r[0] = (tc_r[0] / 2.0 ) + offset;
-    tc_g[0] = (tc_g[0] / 2.0 ) + offset;
-    tc_b[0] = (tc_b[0] / 2.0 ) + offset;
+    // tc_r[0] = (tc_r[0]);
+    // tc_g[0] = (tc_g[0]);
+    // tc_b[0] = (tc_b[0]);
 
     float red = texture2D(warpTexture, tc_r).r;
     float green = texture2D(warpTexture, tc_g).g;
     float blue = texture2D(warpTexture, tc_b).b;
-    //Black edges off the texture
-    gl_FragColor = ((tc_g.x - offset < 0.0) || (tc_g.x - offset > 0.5) || (tc_g.y < 0.0) || (tc_g.y > 1.0)) ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(red, green, blue, 1.0);
-    // gl_FragColor = vec4(gl_TexCoord[0].xy, 0.0, 1.);
+    // //Black edges off the texture
+    // gl_FragColor = ((tc_g.x - offset < 0.0) || (tc_g.x - offset > 0.5) || (tc_g.y < 0.0) || (tc_g.y > 1.0)) ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(red, green, blue, 1.0);
+    // // gl_FragColor = vec4(gl_TexCoord[0].xy, 0.0, 1.);
 };
