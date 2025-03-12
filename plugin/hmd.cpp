@@ -79,8 +79,8 @@ int afCameraHMD::init(const afBaseObjectPtr a_afObjectPtr, const afBaseObjectAtt
 
     afShaderAttributes shaderAttribs;
     shaderAttribs.m_shaderDefined = true;
-    shaderAttribs.m_vtxFilepath = g_current_filepath + "/shaders/hmd_distortion.vs";
-    shaderAttribs.m_fragFilepath = g_current_filepath + "/shaders/hmd_distortion.fs";
+    shaderAttribs.m_vtxFilepath = "example/shaders/hmd_distortion.vs";
+    shaderAttribs.m_fragFilepath = "example/shaders/hmd_distortion.fs";
 
     m_shaderPgm = afShaderUtils::createFromAttribs(&shaderAttribs, "TEST", "VR_CAM");
     if (!m_shaderPgm){
@@ -195,7 +195,7 @@ bool afCameraHMD::close()
 void afCameraHMD::updateHMDParams()
 {
     GLint id = m_shaderPgm->getId();
-    //    cerr << "INFO! Shader ID " << id << endl;
+       cerr << "INFO! Shader ID " << id << endl;
     glUseProgram(id);
     glUniform1i(glGetUniformLocation(id, "warpTexture"), 2);
     glUniform2fv(glGetUniformLocation(id, "ViewportScale"), 1, m_viewport_scale);

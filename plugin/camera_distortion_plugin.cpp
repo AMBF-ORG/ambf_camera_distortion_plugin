@@ -47,37 +47,31 @@
 
 using namespace std;
 
-
-//------------------------------------------------------------------------------
-// DECLARED FUNCTIONS
-//------------------------------------------------------------------------------
-
-//------------------------------------------------------------------------------
-
-
 afCameraDistortionPlugin::afCameraDistortionPlugin()
 {   
     cout << "/*********************************************" << endl;
     cout << "/* AMBF Camera Distortion Plugin" << endl;
     cout << "/*********************************************" << endl;
-
-    // For HTC Vive Pro
-    m_width = 1920;
-    m_height = 1080;
-    m_alias_scaling = 1.0;
 }
 
 int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const afBaseObjectAttribsPtr a_objectAttribs)
 {
     m_camera = (afCameraPtr)a_afObjectPtr;
+
+    cerr << "Camera image: [" << m_camera->m_width << "x" << m_camera->m_height  << "]" << endl;
+    
+    // TODO: Use the params defined m_camera and m_width and m_height
+    // Think about the way to dynamically change framebuffer size
+    m_width = m_camera->m_width;
+    m_height = m_camera->m_height;
+
     YAML::Node specificationDataNode = YAML::Load(a_objectAttribs->getSpecificationData().m_rawData);
-    CameraParams params;
 
     // If there is a configuration file given in the ADF file
     if (specificationDataNode["plugins"][0]["distortion_config"]){
         string m_configPath = specificationDataNode["plugins"][0]["distortion_config"].as<string>();
         cerr << "[INFO!] Reading configuration file: " << m_configPath << endl;
-        readCameraParams(m_configPath, params);
+        readCameraParams(m_configPath, m_cameraParams);
     }
     
     // If there is no configuration file given
@@ -87,50 +81,24 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
     }
 
     m_camera->setOverrideRendering(true);
-
-    m_camera->getInternalCamera()->m_stereoOffsetW = 0.0;
-
     m_frameBuffer = cFrameBuffer::create();
-    m_frameBuffer->setup(m_camera->getInternalCamera(), m_width * m_alias_scaling, m_height * m_alias_scaling, true, true, GL_RGBA);
 
-    string file_path = __FILE__;
-    m_current_filepath = file_path.substr(0, file_path.rfind("/"));
+    // Initialize framebuffer (framebuffer store color/depth information)
+    m_frameBuffer->setup(m_camera->getInternalCamera(), m_width, m_height, true, true, GL_RGBA);
 
+    // Specify shader files
     afShaderAttributes shaderAttribs;
     shaderAttribs.m_shaderDefined = true;
     shaderAttribs.m_vtxFilepath = specificationDataNode["plugins"][0]["vertex_shader"].as<string>();
     shaderAttribs.m_fragFilepath = specificationDataNode["plugins"][0]["fragment_shader"].as<string>();
 
-    m_shaderPgm = afShaderUtils::createFromAttribs(&shaderAttribs, "TEST", "VR_CAM");
+    m_shaderPgm = afShaderUtils::createFromAttribs(&shaderAttribs, "CameraDistortion", "CameraDistortion");
     if (!m_shaderPgm){
         cerr << "ERROR! FAILED TO LOAD SHADER PGM \n";
         return -1;
     }
 
-    m_viewport_scale[0] = 1.0;
-    m_viewport_scale[1] = 1.0;
-
-    if (params.distortion_coefs.empty()) {
-        for (int i = 0; i < 4; i++) {
-            m_distortion_coeffs[i] = params.distortion_coefs[i];
-        }
-    } else {
-        m_distortion_coeffs[0] = 0.0;
-        m_distortion_coeffs[1] = 0.0;
-        m_distortion_coeffs[2] = 0.0;
-        m_distortion_coeffs[3] = 0.0;
-    }
-
-    m_aberr_scale[0] = 1.0;
-    m_aberr_scale[1] = 1.0;
-    m_aberr_scale[2] = 1.0;
-
-    m_lens_center[0] = 0.0;
-    m_lens_center[1] = 0.0;     
-
-    m_warp_scale = 1.0;
-    m_warp_adj = 1.0;
-
+    // Set two sets of trinangles
     m_quadMesh = new cMesh();
     float quad[] = {
         // positions
@@ -142,6 +110,7 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
           1.0f,  1.0f, 0.0f,
     };
 
+    // Create triangles to set Texture coordinate
     for (int vI = 0 ; vI < 2 ; vI++){
         int off = vI * 9;
         cVector3d v0(quad[off + 0], quad[off + 1], quad[off + 2]);
@@ -149,6 +118,7 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
         cVector3d v2(quad[off + 6], quad[off + 7], quad[off + 8]);
         m_quadMesh->newTriangle(v0, v1, v2);
     }
+
     m_quadMesh->m_vertices->setTexCoord(1, 0.0, 0.0, 1.0);
     m_quadMesh->m_vertices->setTexCoord(2, 1.0, 0.0, 1.0);
     m_quadMesh->m_vertices->setTexCoord(0, 0.0, 1.0, 1.0);
@@ -166,7 +136,8 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
     m_distortedWorld = new cWorld();
     m_distortedWorld->addChild(m_quadMesh);
 
-    cerr << m_distortion_coeffs[0] << "," << m_distortion_coeffs[1] << "," << m_distortion_coeffs[2] << "," << m_distortion_coeffs[3] << endl;
+    updateCameraParams();
+
 
     return 1;
 }
@@ -175,12 +146,11 @@ void afCameraDistortionPlugin::graphicsUpdate()
 {
     glfwMakeContextCurrent(m_camera->m_window);
     m_frameBuffer->renderView();
-    updateCameraParams();
 
     afRenderOptions ro;
     ro.m_updateLabels = true;
 
-    // Temporarily switch camera to VR world
+    // Temporarily switch camera to Distorted world
     cWorld* cachedWorld = m_camera->getInternalCamera()->getParentWorld();
     m_camera->getInternalCamera()->setStereoMode(C_STEREO_DISABLED);
     m_camera->getInternalCamera()->setParentWorld(m_distortedWorld);
@@ -192,7 +162,7 @@ void afCameraDistortionPlugin::graphicsUpdate()
     m_camera->render(ro);
     m_camera->getInternalCamera()->m_frontLayer = frontLayer;
 
-    m_camera->getInternalCamera()->setStereoMode(C_STEREO_PASSIVE_LEFT_RIGHT);
+    m_camera->getInternalCamera()->setStereoMode(C_STEREO_DISABLED);
     m_camera->getInternalCamera()->setParentWorld(cachedWorld);
 }
 
@@ -215,19 +185,18 @@ void afCameraDistortionPlugin::updateCameraParams()
     GLint id = m_shaderPgm->getId();
     //    cerr << "INFO! Shader ID " << id << endl; // Shader ID is always 1 in my case
     glUseProgram(id);
-    glUniform1i(glGetUniformLocation(id, "warpTexture"), 2);
-    glUniform2fv(glGetUniformLocation(id, "ViewportScale"), 1, m_viewport_scale);
-    glUniform3fv(glGetUniformLocation(id, "aberr"), 1, m_aberr_scale);
-    glUniform1f(glGetUniformLocation(id, "WarpScale"), m_warp_scale*m_warp_adj);
-    glUniform2fv(glGetUniformLocation(id, "LensCenter"), 1, m_lens_center);
-    glUniform4fv(glGetUniformLocation(id, "HmdWarpParam"), 1, m_distortion_coeffs);
+    glUniform1i(glGetUniformLocation(id, "WarpTexture"), 2);
+    glUniform1i(glGetUniformLocation(id, "DistortionType"), static_cast<int>(m_cameraParams.distortion_type));
+    glUniform3fv(glGetUniformLocation(id, "ChromaticAberr"), 1, m_cameraParams.aberr_scale);
+    glUniform2fv(glGetUniformLocation(id, "LensCenter"), 1, m_cameraParams.lens_center);
+    glUniform4fv(glGetUniformLocation(id, "DistortionParam"), 1, m_cameraParams.distortion_coeffs);
 }
 
 void afCameraDistortionPlugin::makeFullScreen()
 {
     const GLFWvidmode* mode = glfwGetVideoMode(m_camera->m_monitor);
-    int w = 2880;
-    int h = 1600;
+    int w = 1920;
+    int h = 1080;
     int x = mode->width - w;
     int y = mode->height - h;
     int xpos, ypos;
@@ -251,8 +220,18 @@ int afCameraDistortionPlugin::readCameraParams(const string &filename, CameraPar
             cerr << "Error: Missing or invalid 'type' field." << endl;
             return 0;
         }
-        params.camera_type = config["type"].as<string>();
-        cout << params.camera_type << endl;
+        if (config["type"].as<string>() == "pinhole"){
+            params.distortion_type = DistortionType::PINHOLE;
+            cout << "distortion_type: PINHOLE " << static_cast<int>(DistortionType::PINHOLE)<< endl;
+        }
+        else if (config["type"].as<string>() == "fisheye"){
+            params.distortion_type = DistortionType::FISHEYE;
+            cout << "distortion_type: FISHEYE " << static_cast<int>(DistortionType::FISHEYE)<< endl;
+        }
+        else if (config["type"].as<string>() == "panotool"){
+            params.distortion_type = DistortionType::PANOTOOL;
+            cout << "distortion_type: PANOTOOL " << static_cast<int>(DistortionType::PANOTOOL)<< endl;
+        }
 
         // Read intrinsic parameters
         if (!config["intrinsic"] || !config["intrinsic"].IsMap()) {
@@ -265,6 +244,11 @@ int afCameraDistortionPlugin::readCameraParams(const string &filename, CameraPar
             params.fy = config["intrinsic"]["fy"].as<double>();
             params.cx = config["intrinsic"]["cx"].as<double>();
             params.cy = config["intrinsic"]["cy"].as<double>();
+
+            // TODO: Change hardcode lens center
+            params.lens_center[0] = 0.5;
+            params.lens_center[1] = 0.5;
+
         } catch (const YAML::Exception &e) {
             cerr << "Error reading intrinsic parameters: " << e.what() << endl;
             return 0;
@@ -272,21 +256,48 @@ int afCameraDistortionPlugin::readCameraParams(const string &filename, CameraPar
 
         // Read distortion coefficients
         if (!config["distortion_coeffs"] || !config["distortion_coeffs"].IsSequence()) {
-            cerr << "Error: Missing or invalid 'distortion_coeffs' field." << endl;
-            return 0;
+            cerr << "[CAUTION!] Missing or invalid 'distortion_coeffs' field." << endl;
+            for (size_t i = 0 ; i < 5; i++){
+                params.distortion_coeffs[i] = 0.0;
+            }
         }
 
-        params.distortion_coefs.clear();
-        for (const auto &val : config["distortion_coeffs"]) {
-            params.distortion_coefs.push_back(val.as<double>());
+        else{
+            for (size_t i = 0 ; i < 5; i++) {
+                params.distortion_coeffs[i] = config["distortion_coeffs"].as<vector<float>>()[i];
+            }
         }
+        cerr << "Distortion Coefficient:" <<
+                m_cameraParams.distortion_coeffs[0] << "," << 
+                m_cameraParams.distortion_coeffs[1] << "," << 
+                m_cameraParams.distortion_coeffs[2] << "," << 
+                m_cameraParams.distortion_coeffs[3] << endl;
+
+        // Read chromatic distortion coefficient
+        if (!config["chromatic_distortion"] || !config["chromatic_distortion"].IsSequence()) {
+            cerr << "[CAUTION!] Missing or invalid 'chromatic_distortion' field." << endl;
+            for (size_t i = 0 ; i < 3; i++){
+                params.aberr_scale[i] = 0.0;
+            }
+        }
+    
+        else{
+            for (size_t i = 0 ; i < 3; i++) {
+                params.aberr_scale[i] = config["chromatic_distortion"].as<vector<float>>()[i];
+            }
+        }
+
+        cerr << "Chromatic distortion Coefficient:" <<
+                m_cameraParams.aberr_scale[0] << "," << 
+                m_cameraParams.aberr_scale[1] << "," << 
+                m_cameraParams.aberr_scale[2] << endl;
 
         // Validate coefficient count based on type
-        if ((params.camera_type == "fisheye" && params.distortion_coefs.size() != 4) ||
-            (params.camera_type == "pinhole" && params.distortion_coefs.size() != 5)) {
-            cerr << "Error: Incorrect number of distortion coefficients for " << params.camera_type << " camera." << endl;
-            return 0;
-        }
+        // if ((params.camera_type == "fisheye" && params.distortion_coefs.size() != 4) ||
+        //     (params.camera_type == "pinhole" && params.distortion_coefs.size() != 5)) {
+        //     cerr << "Error: Incorrect number of distortion coefficients for " << params.camera_type << " camera." << endl;
+        //     return 0;
+        // }
 
         return 1;
     } catch (const YAML::Exception &e) {

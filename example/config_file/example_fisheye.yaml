@@ -7,4 +7,5 @@ intrinsic:
   fy: 500.0
   cx: 320.0
   cy: 240.0
-distortion_coeffs: [0.01, -0.02, 0.0003, -0.0004]
+distortion_coeffs: [0.0, 0.0, 0.0, 0.0]
+chromatic_distortion: [1.0, 1.0, 1.0]

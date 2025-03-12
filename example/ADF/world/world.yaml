@@ -43,9 +43,10 @@ distorted_camera:
       name: camera_distortion_plugin,
       path: ../../../build,
       filename: libambf_camera_distortion_plugin.so,
+      # filename: libambf_HMD_plugin.so,
       distortion_config: example/config_file/example_fisheye.yaml,
       vertex_shader: example/shaders/camera_distortion.vs,
-      fragment_shader: example/shaders/camera_distortion.fs
+      fragment_shader: example/shaders/camera_distortion_test.fs
     }
   ]
 

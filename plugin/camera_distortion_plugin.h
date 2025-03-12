@@ -49,13 +49,21 @@
 using namespace std;
 using namespace ambf;
 
-// Struct to store camera parameters
-struct CameraParams {
-    string camera_type;
-    double fx, fy, cx, cy;
-    vector<double> distortion_coefs;
+// Define an enum for camera types
+enum class DistortionType {
+    PINHOLE,
+    FISHEYE,
+    PANOTOOL,
 };
 
+// Struct to store camera parameters
+struct CameraParams {
+    DistortionType distortion_type;
+    float fx, fy, cx, cy;
+    float distortion_coeffs[4];
+    float aberr_scale[3];
+    float lens_center[2];
+};
 
 class afCameraDistortionPlugin: public afObjectPlugin{
 public:
@@ -80,18 +88,9 @@ protected:
     cMesh* m_quadMesh;
     int m_width;
     int m_height;
-    int m_alias_scaling;
     cShaderProgramPtr m_shaderPgm;
-
-protected:
-    float m_viewport_scale[2];
-    float m_distortion_coeffs[4];
-    float m_aberr_scale[3];
-    float m_sep;
-    float m_lens_center[2];
-    float m_warp_scale;
-    float m_warp_adj;
-    float m_vpos;
+    int m_distortion_type;
+    CameraParams m_cameraParams;
 };
 
 
