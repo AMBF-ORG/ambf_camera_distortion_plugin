@@ -189,7 +189,8 @@ void afCameraDistortionPlugin::updateCameraParams()
     glUniform1i(glGetUniformLocation(id, "DistortionType"), static_cast<int>(m_cameraParams.distortion_type));
     glUniform3fv(glGetUniformLocation(id, "ChromaticAberr"), 1, m_cameraParams.aberr_scale);
     glUniform2fv(glGetUniformLocation(id, "LensCenter"), 1, m_cameraParams.lens_center);
-    glUniform4fv(glGetUniformLocation(id, "DistortionParam"), 1, m_cameraParams.distortion_coeffs);
+    glUniform4fv(glGetUniformLocation(id, "RadialDistortion"), 1, m_cameraParams.radial_distortion_coeffs);
+    glUniform2fv(glGetUniformLocation(id, "TangentialDistortion"), 1, m_cameraParams.tangential_distortion_coeffs);
 }
 
 void afCameraDistortionPlugin::makeFullScreen()
@@ -254,30 +255,51 @@ int afCameraDistortionPlugin::readCameraParams(const string &filename, CameraPar
             return 0;
         }
 
-        // Read distortion coefficients
-        if (!config["distortion_coeffs"] || !config["distortion_coeffs"].IsSequence()) {
-            cerr << "[CAUTION!] Missing or invalid 'distortion_coeffs' field." << endl;
-            for (size_t i = 0 ; i < 5; i++){
-                params.distortion_coeffs[i] = 0.0;
+        // Read radial distortion coefficients
+        if (!config["radial_distortion_coeffs"] || !config["radial_distortion_coeffs"].IsSequence()) {
+            cerr << "[CAUTION!] Missing or invalid 'radial distortion_coeffs' field." << endl;
+            for (size_t i = 0 ; i < 4; i++){
+                params.radial_distortion_coeffs[i] = 0.0;
             }
         }
 
         else{
-            for (size_t i = 0 ; i < 5; i++) {
-                params.distortion_coeffs[i] = config["distortion_coeffs"].as<vector<float>>()[i];
+            for (size_t i = 0 ; i < 4; i++) {
+                params.radial_distortion_coeffs[i] = config["radial_distortion_coeffs"].as<vector<float>>()[i];
             }
         }
-        cerr << "Distortion Coefficient:" <<
-                m_cameraParams.distortion_coeffs[0] << "," << 
-                m_cameraParams.distortion_coeffs[1] << "," << 
-                m_cameraParams.distortion_coeffs[2] << "," << 
-                m_cameraParams.distortion_coeffs[3] << endl;
+
+        // Read radial distortion coefficients
+        if (!config["tangential_distortion_coeffs"] || !config["tangential_distortion_coeffs"].IsSequence()) {
+            cerr << "[CAUTION!] Missing or invalid 'tangential distortion_coeffs' field." << endl;
+            for (size_t i = 0 ; i < 2; i++){
+                params.tangential_distortion_coeffs[i] = 0.0;
+            }
+        }
+
+        else{
+            for (size_t i = 0 ; i < 2; i++) {
+                params.tangential_distortion_coeffs[i] = config["tangential_distortion_coeffs"].as<vector<float>>()[i];
+            }
+        }
+
+        cerr << "Distortion Coefficient:" << endl;
+        cerr << "Radial: " << 
+                m_cameraParams.radial_distortion_coeffs[0] << "," << 
+                m_cameraParams.radial_distortion_coeffs[1] << "," << 
+                m_cameraParams.radial_distortion_coeffs[2] << "," << 
+                m_cameraParams.radial_distortion_coeffs[3] << endl;
+
+        cerr << "Tangential: " << 
+                m_cameraParams.tangential_distortion_coeffs[0] << "," << 
+                m_cameraParams.tangential_distortion_coeffs[1] << endl;
+
 
         // Read chromatic distortion coefficient
         if (!config["chromatic_distortion"] || !config["chromatic_distortion"].IsSequence()) {
             cerr << "[CAUTION!] Missing or invalid 'chromatic_distortion' field." << endl;
             for (size_t i = 0 ; i < 3; i++){
-                params.aberr_scale[i] = 0.0;
+                params.aberr_scale[i] = 1.0;
             }
         }
     

@@ -60,7 +60,8 @@ enum class DistortionType {
 struct CameraParams {
     DistortionType distortion_type;
     float fx, fy, cx, cy;
-    float distortion_coeffs[4];
+    float radial_distortion_coeffs[4];
+    float tangential_distortion_coeffs[2];
     float aberr_scale[3];
     float lens_center[2];
 };
