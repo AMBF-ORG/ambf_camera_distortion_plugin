@@ -59,6 +59,7 @@ enum class DistortionType {
 // Struct to store camera parameters
 struct CameraParams {
     DistortionType distortion_type;
+    float width, height;
     float fx, fy, cx, cy;
     float radial_distortion_coeffs[4];
     float tangential_distortion_coeffs[2];

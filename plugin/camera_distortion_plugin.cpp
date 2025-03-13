@@ -246,9 +246,22 @@ int afCameraDistortionPlugin::readCameraParams(const string &filename, CameraPar
             params.cx = config["intrinsic"]["cx"].as<double>();
             params.cy = config["intrinsic"]["cy"].as<double>();
 
-            // TODO: Change hardcode lens center
-            params.lens_center[0] = 0.5;
-            params.lens_center[1] = 0.5;
+
+            if (config["image_size"]){
+                params.width = config["image_size"].as<vector<double>>()[0];
+                params.height = config["image_size"].as<vector<double>>()[1];
+                params.lens_center[0] = params.cx/params.width;
+                params.lens_center[1] = params.cy/params.height;
+
+                cout << "image_size: [" << params.width << "," << params.height << ']' << endl;
+                cout << "len center: [" << params.lens_center[0]  << "," << params.lens_center[1] << ']' << endl;
+            }  
+
+            else{
+                params.lens_center[0] = 0.5;
+                params.lens_center[1] = 0.5;
+            }
+
 
         } catch (const YAML::Exception &e) {
             cerr << "Error reading intrinsic parameters: " << e.what() << endl;

@@ -1,0 +1,1 @@
+- Add functionality to adapt the camera with different image size.

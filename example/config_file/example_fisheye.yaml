@@ -2,6 +2,7 @@
 ## Type: fisheye
 
 type: fisheye
+image_size: [640, 480]
 intrinsic:
   fx: 500.0
   fy: 500.0

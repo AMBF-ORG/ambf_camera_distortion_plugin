@@ -1,6 +1,4 @@
 # ambf_camera_distortion_plugin
-AMBF plugin to 
-
 This project is a plugin for Asynchronous Multibody Framework ([AMBF](https://github.com/WPI-AIM/ambf)) developed by Munawar et al. 
 This plugin will apply the camera distrotion (radial, tangential, fisheye etc).
 
@@ -14,7 +12,7 @@ Lets call the absolute location of this package as **<plugin_path>**. E.g. if yo
 git clone git@github.com:LCSR-CIIS/ambf_camera_distortion_plugin.git
 cd ambf_camera_distortion_plugin
 mkdir build && cd build
-make -j7
+cmake .. && make -j7
 ```
 
 ## 2. How to use this plugin
