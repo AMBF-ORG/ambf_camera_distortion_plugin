@@ -9,7 +9,7 @@ Lets call the absolute location of this package as **<plugin_path>**. E.g. if yo
 
 ### 1.1 clone and build 
 ```bash
-git clone git@github.com:LCSR-CIIS/ambf_camera_distortion_plugin.git
+git clone git@github.com:AMBF-ORG/ambf_camera_distortion_plugin.git
 cd ambf_camera_distortion_plugin
 mkdir build && cd build
 cmake .. && make -j7
