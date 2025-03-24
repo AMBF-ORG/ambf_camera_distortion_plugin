@@ -57,7 +57,8 @@ afCameraDistortionPlugin::afCameraDistortionPlugin()
 int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const afBaseObjectAttribsPtr a_objectAttribs)
 {
     m_camera = (afCameraPtr)a_afObjectPtr;
-
+    m_camera->m_width = 640;
+    m_camera->m_height = 640;
     cerr << "Camera image: [" << m_camera->m_width << "x" << m_camera->m_height  << "]" << endl;
     
     // TODO: Use the params defined m_camera and m_width and m_height
