@@ -79,6 +79,7 @@ public:
     void updateCameraParams();
 
     void makeFullScreen();
+    void changeScreenSize(int w, int h);
 
     int readCameraParams(const string &filename, CameraParams &params);
 

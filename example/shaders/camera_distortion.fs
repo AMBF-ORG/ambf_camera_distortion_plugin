@@ -4,6 +4,8 @@ uniform sampler2D WarpTexture;
 //Position of lens center in normalized pixel-coordinate
 uniform vec2 LensCenter;
 
+uniform vec2 ImageSize;
+
 // Distortion Type
 uniform int DistortionType;       // 0 = Pinhole, 1 = Fisheye, 2 = PanoTool
 
@@ -16,8 +18,12 @@ uniform vec3 ChromaticAberr;
 
 void main()
 {   
+    // Normalized texture coordinate [0,1]
     vec2 output_loc = gl_TexCoord[0].xy;
     
+    // Covert everything in pixel coordinate
+    // TODO
+
     //Compute fragment location in lens-centered coordinates in pixel coordinata  
     vec2 r = (output_loc  - LensCenter);
     
@@ -72,6 +78,9 @@ void main()
         RadialDistortion.x * r_mag * r_mag * r_mag);
     }
 
+    // Covert back to normilized coordinate
+    // TODO
+
     //back to viewport co-ord
     vec2 tc_r = (LensCenter + ChromaticAberr.r * r_displaced);
     vec2 tc_g = (LensCenter + ChromaticAberr.g * r_displaced);
@@ -90,5 +99,4 @@ void main()
     else{
         gl_FragColor = vec4(red, green, blue, 1.0);
     }
-    // gl_FragColor = vec4(gl_TexCoord[0].xy, 0.0, 1.);
 };

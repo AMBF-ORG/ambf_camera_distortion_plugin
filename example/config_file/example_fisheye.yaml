@@ -1,12 +1,12 @@
 ## Example json file for ambf_camera_distortion_plugin
 ## Type: fisheye
 
-type: fisheye
-image_size: [640, 480]
+type: fisheye # pinhole, panotool
+image_size: [1920, 1080]
 intrinsic:
-  fx: 500.0
-  fy: 500.0
-  cx: 320.0
-  cy: 240.0
-radial_distortion_coeffs: [0.0, 0.0, 0.0, 0.0]  # k1, k2, k3, k4
+  fx: 729.4961
+  fy: 729.4961
+  cx: 955.8295
+  cy: 460.3174
+radial_distortion_coeffs: [-0.40724, 0.21794, 0.00125, -0.00060, -0.06069]  # k1, k2, k3, k4
 chromatic_distortion: [1.0, 1.0, 1.0] # [Optional]

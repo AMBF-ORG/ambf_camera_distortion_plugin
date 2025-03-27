@@ -57,14 +57,14 @@ afCameraDistortionPlugin::afCameraDistortionPlugin()
 int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const afBaseObjectAttribsPtr a_objectAttribs)
 {
     m_camera = (afCameraPtr)a_afObjectPtr;
-    m_camera->m_width = 640;
-    m_camera->m_height = 640;
-    cerr << "Camera image: [" << m_camera->m_width << "x" << m_camera->m_height  << "]" << endl;
+    // m_camera->m_width = 640;
+    // m_camera->m_height = 640;
+    // cerr << "Camera image: [" << m_camera->m_width << "x" << m_camera->m_height  << "]" << endl;
     
-    // TODO: Use the params defined m_camera and m_width and m_height
-    // Think about the way to dynamically change framebuffer size
-    m_width = m_camera->m_width;
-    m_height = m_camera->m_height;
+    // // TODO: Use the params defined m_camera and m_width and m_height
+    // // Think about the way to dynamically change framebuffer size
+    // m_width = m_camera->m_width;
+    // m_height = m_camera->m_height;
 
     YAML::Node specificationDataNode = YAML::Load(a_objectAttribs->getSpecificationData().m_rawData);
 
@@ -80,6 +80,13 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
         cerr << "WARNING! NO configuration file specified." << endl;
         return -1;
     }
+
+    
+    // TODO: Use the params defined m_camera and m_width and m_height
+    // Think about the way to dynamically change framebuffer size
+    changeScreenSize(500, 500);
+    cerr << "Camera image: [" << m_camera->m_width << "x" << m_camera->m_height  << "]" << endl;
+
 
     m_camera->setOverrideRendering(true);
     m_frameBuffer = cFrameBuffer::create();
@@ -139,6 +146,7 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
 
     updateCameraParams();
 
+    makeFullScreen();
 
     return 1;
 }
@@ -190,6 +198,7 @@ void afCameraDistortionPlugin::updateCameraParams()
     glUniform1i(glGetUniformLocation(id, "DistortionType"), static_cast<int>(m_cameraParams.distortion_type));
     glUniform3fv(glGetUniformLocation(id, "ChromaticAberr"), 1, m_cameraParams.aberr_scale);
     glUniform2fv(glGetUniformLocation(id, "LensCenter"), 1, m_cameraParams.lens_center);
+    glUniform2fv(glGetUniformLocation(id, "Image"), 1, m_cameraParams.width); //TODOx
     glUniform4fv(glGetUniformLocation(id, "RadialDistortion"), 1, m_cameraParams.radial_distortion_coeffs);
     glUniform2fv(glGetUniformLocation(id, "TangentialDistortion"), 1, m_cameraParams.tangential_distortion_coeffs);
 }
@@ -208,6 +217,24 @@ void afCameraDistortionPlugin::makeFullScreen()
     glfwSetWindowSize(m_camera->m_window, w, h);
     m_camera->m_width = w;
     m_camera->m_height = h;
+    glfwSwapInterval(0);
+    cerr << "\t Making " << m_camera->getName() << " fullscreen \n" ;
+}
+
+void afCameraDistortionPlugin::changeScreenSize(int w, int h)
+{
+    const GLFWvidmode* mode = glfwGetVideoMode(m_camera->m_monitor);
+    int x = mode->width - w;
+    int y = mode->height - h;
+    int xpos, ypos;
+    glfwGetMonitorPos(m_camera->m_monitor, &xpos, &ypos);
+    x += xpos; y += ypos;
+    glfwSetWindowPos(m_camera->m_window, x, y);
+    glfwSetWindowSize(m_camera->m_window, w, h);
+    m_camera->m_width = w;
+    m_camera->m_height = h;
+    m_width = m_camera->m_width;
+    m_height = m_camera->m_height;
     glfwSwapInterval(0);
     cerr << "\t Making " << m_camera->getName() << " fullscreen \n" ;
 }

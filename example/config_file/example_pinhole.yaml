@@ -8,6 +8,6 @@ intrinsic:
   fy: 500.0
   cx: 320.0
   cy: 240.0
-radial_distortion_coeffs: [0.0, 0.0, 0.0, 0.0]  # k1, k2, k3, k4
+radial_distortion_coeffs: [0.0, 0.0, 0.0]  # k1, k2, k3, k4
 tangential_distortion_coeffs: [0.0, 0.0]  # p1, p2
 chromatic_distortion: [1.0, 1.0, 1.0] # [Optional]

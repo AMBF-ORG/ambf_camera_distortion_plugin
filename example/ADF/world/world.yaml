@@ -34,16 +34,21 @@ distorted_camera:
   location: {x: 2.0, y: 0.0, z: 0.0}
   look at: {x: -1.0, y: 0.0, z: 0.0}
   up: {x: 0.0, y: 0.0, z: 1.0}
-  clipping plane: {near: 2.0135309278350517, far: 1006.7654639175257}
-  field view angle: 0.17951634837990105 # so that focal length is approximately 1000px and phantom is 250 mm away
-  monitor: 0
+
+  # Change HERE!!
+  window resolution: {width: 480, height: 480}
+  camera intrinsic: {fx: 729.4961, fy: 729.4961, cx: 955.8295, cy: 460.3174, s: 0.0}
+  
+  # clipping plane: {near: 2.0135309278350517, far: 1006.7654639175257}
+  # field view angle: 0.17951634837990105 # so that focal length is approximately 1000px and phantom is 250 mm away
+  monitor: 1
   visible: true
   plugins: [
     {
       name: camera_distortion_plugin,
       path: ../../../build,
       filename: libambf_camera_distortion_plugin.so,
-      distortion_config: example/config_file/example_pinhole.yaml,
+      distortion_config: example/config_file/example_fisheye.yaml,
       vertex_shader: example/shaders/camera_distortion.vs,
       fragment_shader: example/shaders/camera_distortion.fs
     }
