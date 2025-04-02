@@ -61,8 +61,8 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
     // m_camera->m_height = 640;
     // cerr << "Camera image: [" << m_camera->m_width << "x" << m_camera->m_height  << "]" << endl;
     
-    // // TODO: Use the params defined m_camera and m_width and m_height
-    // // Think about the way to dynamically change framebuffer size
+    // TODO: Use the params defined m_camera and m_width and m_height
+    // Think about the way to dynamically change framebuffer size
     // m_width = m_camera->m_width;
     // m_height = m_camera->m_height;
 
@@ -198,7 +198,16 @@ void afCameraDistortionPlugin::updateCameraParams()
     glUniform1i(glGetUniformLocation(id, "DistortionType"), static_cast<int>(m_cameraParams.distortion_type));
     glUniform3fv(glGetUniformLocation(id, "ChromaticAberr"), 1, m_cameraParams.aberr_scale);
     glUniform2fv(glGetUniformLocation(id, "LensCenter"), 1, m_cameraParams.lens_center);
-    glUniform2fv(glGetUniformLocation(id, "Image"), 1, m_cameraParams.width); //TODOx
+
+    GLfloat center[] = {m_cameraParams.cx, m_cameraParams.cy};
+    glUniform2fv(glGetUniformLocation(id, "Center"), 1, center); 
+
+    GLfloat focal_length[] = {m_cameraParams.fx, m_cameraParams.fy};
+    glUniform2fv(glGetUniformLocation(id, "FocalLength"), 1, focal_length); 
+
+    GLfloat image_size[] = {m_cameraParams.width, m_cameraParams.height};
+    glUniform2fv(glGetUniformLocation(id, "ImageSize"), 1, image_size); 
+
     glUniform4fv(glGetUniformLocation(id, "RadialDistortion"), 1, m_cameraParams.radial_distortion_coeffs);
     glUniform2fv(glGetUniformLocation(id, "TangentialDistortion"), 1, m_cameraParams.tangential_distortion_coeffs);
 }
@@ -310,7 +319,7 @@ int afCameraDistortionPlugin::readCameraParams(const string &filename, CameraPar
             }
         }
 
-        // Read radial distortion coefficients
+        // Read tangential distortion coefficients
         if (!config["tangential_distortion_coeffs"] || !config["tangential_distortion_coeffs"].IsSequence()) {
             cerr << "[CAUTION!] Missing or invalid 'tangential distortion_coeffs' field." << endl;
             for (size_t i = 0 ; i < 2; i++){
