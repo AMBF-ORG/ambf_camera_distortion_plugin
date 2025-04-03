@@ -37,7 +37,7 @@ distorted_camera:
 
   # Change HERE!!
   window resolution: {width: 480, height: 480}
-  camera intrinsic: {fx: 729.4961, fy: 729.4961, cx: 955.8295, cy: 460.3174, s: 0.0}
+  camera intrinsics: {fx: 729.4961, fy: 729.4961, cx: 955.8295, cy: 460.3174, s: 0.0}
   
   # clipping plane: {near: 2.0135309278350517, far: 1006.7654639175257}
   # field view angle: 0.17951634837990105 # so that focal length is approximately 1000px and phantom is 250 mm away

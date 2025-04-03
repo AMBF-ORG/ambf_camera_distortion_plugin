@@ -65,6 +65,7 @@ struct CameraParams {
     float tangential_distortion_coeffs[2];
     float aberr_scale[3];
     float lens_center[2];
+    bool blackout;
 };
 
 class afCameraDistortionPlugin: public afObjectPlugin{
