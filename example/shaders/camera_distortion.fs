@@ -23,6 +23,9 @@ uniform vec2 TangentialDistortion; // p1, p2
 //chromatic distortion post scaling
 uniform vec3 ChromaticAberr;
 
+// Whether overlay blackout for circular viewing region
+uniform bool Blackout;
+
 void main()
 {   
     // Normalized texture coordinate [0,1]
@@ -97,14 +100,10 @@ void main()
     float blue = texture2D(WarpTexture, tc_b).b;
 
     //Black edges off the texture
-    if (DistortionType == 1){
-        gl_FragColor = ((tc_g.x < 0.0) || (tc_g.x > 1.0) || (tc_g.y < 0.0) || (tc_g.y > 1.0) 
-        // || r_mag > 0.5
+    gl_FragColor = (
+            (tc_r.x < 0.0) || (tc_r.x > 1.0) || (tc_r.y < 0.0) || (tc_r.y > 1.0) 
+            || (tc_g.x < 0.0) || (tc_g.x > 1.0) || (tc_g.y < 0.0) || (tc_g.y > 1.0) 
+            || (tc_b.x < 0.0) || (tc_b.x > 1.0) || (tc_b.y < 0.0) || (tc_b.y > 1.0) 
+        || (Blackout && r_mag > max(ImageSize[0] / FocalLength[0], ImageSize[1] / FocalLength[1]) / 2.0)
         ) ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(red, green, blue, 1.0);        
-    }
-    
-    // No black edges off 
-    else{
-        gl_FragColor = vec4(red, green, blue, 1.0);
-    }
 };

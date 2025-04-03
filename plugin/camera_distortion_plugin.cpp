@@ -210,6 +210,8 @@ void afCameraDistortionPlugin::updateCameraParams()
 
     glUniform4fv(glGetUniformLocation(id, "RadialDistortion"), 1, m_cameraParams.radial_distortion_coeffs);
     glUniform2fv(glGetUniformLocation(id, "TangentialDistortion"), 1, m_cameraParams.tangential_distortion_coeffs);
+
+    glUniform1i(glGetUniformLocation(id, "Blackout"), m_cameraParams.blackout); 
 }
 
 void afCameraDistortionPlugin::makeFullScreen()
@@ -363,6 +365,17 @@ int afCameraDistortionPlugin::readCameraParams(const string &filename, CameraPar
                 m_cameraParams.aberr_scale[0] << "," << 
                 m_cameraParams.aberr_scale[1] << "," << 
                 m_cameraParams.aberr_scale[2] << endl;
+
+        // Whether overlay blackout except for circular viewing region
+        if (!config["blackout"]) {
+            cerr << "[CAUTION!] Missing or invalid 'blackout' field." << endl;
+            params.blackout = false;
+        } else {
+            params.blackout = config["blackout"].as<bool>();
+        }
+
+        cerr << "Blackout: " << 
+                m_cameraParams.blackout << endl;
 
         // Validate coefficient count based on type
         // if ((params.camera_type == "fisheye" && params.distortion_coefs.size() != 4) ||
