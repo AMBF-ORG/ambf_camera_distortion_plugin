@@ -104,6 +104,6 @@ void main()
             (tc_r.x < 0.0) || (tc_r.x > 1.0) || (tc_r.y < 0.0) || (tc_r.y > 1.0) 
             || (tc_g.x < 0.0) || (tc_g.x > 1.0) || (tc_g.y < 0.0) || (tc_g.y > 1.0) 
             || (tc_b.x < 0.0) || (tc_b.x > 1.0) || (tc_b.y < 0.0) || (tc_b.y > 1.0) 
-        || (Blackout && r_mag > max(ImageSize[0] / FocalLength[0], ImageSize[1] / FocalLength[1]) / 2.0)
+        || (Blackout && r_mag > min(ImageSize[0] / FocalLength[0], ImageSize[1] / FocalLength[1]) / 2.0)
         ) ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(red, green, blue, 1.0);        
 };
