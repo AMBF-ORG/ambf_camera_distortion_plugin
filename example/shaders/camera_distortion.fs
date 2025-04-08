@@ -4,7 +4,14 @@ uniform sampler2D WarpTexture;
 //Position of lens center in normalized pixel-coordinate
 uniform vec2 LensCenter;
 
+// width and height
 uniform vec2 ImageSize;
+
+// center in unnormalized pixel coordinates, i.e. c_x, c_y
+uniform vec2 Center;
+
+// f_x, f_y
+uniform vec2 FocalLength;
 
 // Distortion Type
 uniform int DistortionType;       // 0 = Pinhole, 1 = Fisheye, 2 = PanoTool
@@ -16,16 +23,17 @@ uniform vec2 TangentialDistortion; // p1, p2
 //chromatic distortion post scaling
 uniform vec3 ChromaticAberr;
 
+// Whether overlay blackout for circular viewing region
+uniform bool Blackout;
+
 void main()
 {   
     // Normalized texture coordinate [0,1]
     vec2 output_loc = gl_TexCoord[0].xy;
     
-    // Covert everything in pixel coordinate
-    // TODO
-
-    //Compute fragment location in lens-centered coordinates in pixel coordinata  
-    vec2 r = (output_loc  - LensCenter);
+    // Convert everything in pixel coordinate
+    // Compute fragment location in lens-centered coordinates in pixel coordinates
+    vec2 r = (output_loc - LensCenter) * ImageSize / FocalLength;
     
     //|r|
     float r_mag = length(r);
@@ -78,8 +86,9 @@ void main()
         RadialDistortion.x * r_mag * r_mag * r_mag);
     }
 
-    // Covert back to normilized coordinate
-    // TODO
+    // Convert back to normalized coordinate
+    // wait to recenter after chromatic aberration
+    r_displaced = r_displaced * FocalLength / ImageSize;
 
     //back to viewport co-ord
     vec2 tc_r = (LensCenter + ChromaticAberr.r * r_displaced);
@@ -90,13 +99,11 @@ void main()
     float green = texture2D(WarpTexture, tc_g).g;
     float blue = texture2D(WarpTexture, tc_b).b;
 
-    // //Black edges off the texture
-    if (DistortionType == 1){
-        gl_FragColor = ((tc_g.x < 0.0) || (tc_g.x > 1.0) || (tc_g.y < 0.0) || (tc_g.y > 1.0) || r_mag > 0.5) ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(red, green, blue, 1.0);        
-    }
-    
-    // No black edges off 
-    else{
-        gl_FragColor = vec4(red, green, blue, 1.0);
-    }
+    //Black edges off the texture
+    gl_FragColor = (
+            (tc_r.x < 0.0) || (tc_r.x > 1.0) || (tc_r.y < 0.0) || (tc_r.y > 1.0) 
+            || (tc_g.x < 0.0) || (tc_g.x > 1.0) || (tc_g.y < 0.0) || (tc_g.y > 1.0) 
+            || (tc_b.x < 0.0) || (tc_b.x > 1.0) || (tc_b.y < 0.0) || (tc_b.y > 1.0) 
+        || (Blackout && r_mag > min(ImageSize[0] / FocalLength[0], ImageSize[1] / FocalLength[1]) / 2.0)
+        ) ? vec4(0.0, 0.0, 0.0, 1.0) : vec4(red, green, blue, 1.0);        
 };
