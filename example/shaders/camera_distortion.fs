@@ -1,11 +1,11 @@
 //per eye texture to warp for lens distortion
 uniform sampler2D WarpTexture;
 
-//Position of lens center in normalized pixel-coordinate
-uniform vec2 LensCenter;
-
-// width and height
+// width and height during camera calibration
 uniform vec2 ImageSize;
+
+// width and height of simulator window
+uniform vec2 WindowSize;
 
 // center in unnormalized pixel coordinates, i.e. c_x, c_y
 uniform vec2 Center;
@@ -23,17 +23,22 @@ uniform vec2 TangentialDistortion; // p1, p2
 //chromatic distortion post scaling
 uniform vec3 ChromaticAberr;
 
-// Whether overlay blackout for circular viewing region
+// Whether to overlay blackout for circular viewing region
 uniform bool Blackout;
 
 void main()
 {   
     // Normalized texture coordinate [0,1]
     vec2 output_loc = gl_TexCoord[0].xy;
-    
-    // Convert everything in pixel coordinate
-    // Compute fragment location in lens-centered coordinates in pixel coordinates
-    vec2 r = (output_loc - LensCenter) * ImageSize / FocalLength;
+
+    // the segment of the window with an aspect ratio matching the image
+    vec2 SubWindowSize = vec2(WindowSize.y * (ImageSize.x / ImageSize.y), WindowSize.y);
+    // offset so the subwindow is centered in the window
+    vec2 SubWindowOffset = vec2((WindowSize.x - SubWindowSize.x) / 2.0, 0.0);
+
+    // Convert everything to unnormalized camera-calibration pixel coordinates
+    // that is, the coordinates relative to the camera before focal length scaling and center translation
+    vec2 r = ((output_loc * WindowSize - SubWindowOffset) * ImageSize / SubWindowSize - Center) / FocalLength;
     
     //|r|
     float r_mag = length(r);
@@ -88,18 +93,20 @@ void main()
 
     // Convert back to normalized coordinate
     // wait to recenter after chromatic aberration
-    r_displaced = r_displaced * FocalLength / ImageSize;
+    vec2 r_displaced_normed = r_displaced * FocalLength * SubWindowSize / ImageSize / WindowSize;
 
-    //back to viewport co-ord
-    vec2 tc_r = (LensCenter + ChromaticAberr.r * r_displaced);
-    vec2 tc_g = (LensCenter + ChromaticAberr.g * r_displaced);
-    vec2 tc_b = (LensCenter + ChromaticAberr.b * r_displaced);
+    vec2 LensCenter = Center * SubWindowSize / ImageSize / WindowSize + SubWindowOffset / WindowSize;
+
+    // back to viewport co-ord
+    vec2 tc_r = (LensCenter + ChromaticAberr.r * r_displaced_normed);
+    vec2 tc_g = (LensCenter + ChromaticAberr.g * r_displaced_normed);
+    vec2 tc_b = (LensCenter + ChromaticAberr.b * r_displaced_normed);
 
     float red = texture2D(WarpTexture, tc_r).r;
     float green = texture2D(WarpTexture, tc_g).g;
     float blue = texture2D(WarpTexture, tc_b).b;
 
-    //Black edges off the texture
+    // Black edges off the texture
     gl_FragColor = (
             (tc_r.x < 0.0) || (tc_r.x > 1.0) || (tc_r.y < 0.0) || (tc_r.y > 1.0) 
             || (tc_g.x < 0.0) || (tc_g.x > 1.0) || (tc_g.y < 0.0) || (tc_g.y > 1.0) 

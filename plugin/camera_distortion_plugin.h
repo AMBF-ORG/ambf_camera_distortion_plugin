@@ -90,8 +90,8 @@ protected:
     cFrameBufferPtr m_frameBuffer;
     cWorld* m_distortedWorld;
     cMesh* m_quadMesh;
-    int m_width;
-    int m_height;
+    // int m_windowWidth;
+    // int m_windowHeight;
     cShaderProgramPtr m_shaderPgm;
     int m_distortion_type;
     CameraParams m_cameraParams;
