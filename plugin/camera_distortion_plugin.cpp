@@ -156,11 +156,15 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
 void afCameraDistortionPlugin::graphicsUpdate()
 {
     glfwMakeContextCurrent(m_camera->m_window);
+
+    m_frameBuffer->renderView();
+
+    // do these two steps after rending the view otherwise
+    // the silhouettes of objects in the scene may appear
     // update params, specifically window size
     updateCameraParams();
     // dynamically resize buffer
     m_frameBuffer->setSize(m_camera->m_width, m_camera->m_height);
-    m_frameBuffer->renderView();
 
     afRenderOptions ro;
     ro.m_updateLabels = true;

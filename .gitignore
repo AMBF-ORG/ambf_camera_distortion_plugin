@@ -35,3 +35,4 @@
 build
         // return readConfigFile(m_configPath);
 .vscode
+.cache/
