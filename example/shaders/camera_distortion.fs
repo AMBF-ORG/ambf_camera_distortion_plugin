@@ -31,6 +31,10 @@ void main()
     // Normalized texture coordinate [0,1]
     vec2 output_loc = gl_TexCoord[0].xy;
 
+    // flip the y axis because OpenGL textures have y axis pointing up but
+    // Center expect y axis to point down
+    output_loc.y = 1.0 - output_loc.y;
+
     // the segment of the window with an aspect ratio matching the image
     vec2 SubWindowSize = vec2(WindowSize.y * (ImageSize.x / ImageSize.y), WindowSize.y);
     // offset so the subwindow is centered in the window
@@ -101,6 +105,11 @@ void main()
     vec2 tc_r = (LensCenter + ChromaticAberr.r * r_displaced_normed);
     vec2 tc_g = (LensCenter + ChromaticAberr.g * r_displaced_normed);
     vec2 tc_b = (LensCenter + ChromaticAberr.b * r_displaced_normed);
+
+    // flip y axis back
+    tc_r.y = 1.0 - tc_r.y;
+    tc_g.y = 1.0 - tc_g.y;
+    tc_b.y = 1.0 - tc_b.y;
 
     float red = texture2D(WarpTexture, tc_r).r;
     float green = texture2D(WarpTexture, tc_g).g;
