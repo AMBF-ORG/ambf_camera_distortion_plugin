@@ -82,9 +82,10 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
     }
 
     
-    // TODO: Use the params defined m_camera and m_width and m_height
-    // Think about the way to dynamically change framebuffer size
-    changeScreenSize(500, 500);
+    // change screen size to match camera params
+    // user can later resize
+    changeScreenSize(m_cameraParams.width, m_cameraParams.height);
+    // changeScreenSize(500, 500);
     cerr << "Camera image: [" << m_camera->m_width << "x" << m_camera->m_height  << "]" << endl;
 
 
@@ -92,7 +93,8 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
     m_frameBuffer = cFrameBuffer::create();
 
     // Initialize framebuffer (framebuffer store color/depth information)
-    m_frameBuffer->setup(m_camera->getInternalCamera(), m_width, m_height, true, true, GL_RGBA);
+    // after changeScreenSize, should match cameraParams width and height
+    m_frameBuffer->setup(m_camera->getInternalCamera(), m_camera->m_width, m_camera->m_height, true, true, GL_RGBA);
 
     // Specify shader files
     afShaderAttributes shaderAttribs;
@@ -146,7 +148,7 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
 
     updateCameraParams();
 
-    makeFullScreen();
+    // makeFullScreen();
 
     return 1;
 }
@@ -154,7 +156,15 @@ int afCameraDistortionPlugin::init(const afBaseObjectPtr a_afObjectPtr, const af
 void afCameraDistortionPlugin::graphicsUpdate()
 {
     glfwMakeContextCurrent(m_camera->m_window);
+
     m_frameBuffer->renderView();
+
+    // do these two steps after rending the view otherwise
+    // the silhouettes of objects in the scene may appear
+    // update params, specifically window size
+    updateCameraParams();
+    // dynamically resize buffer
+    m_frameBuffer->setSize(m_camera->m_width, m_camera->m_height);
 
     afRenderOptions ro;
     ro.m_updateLabels = true;
@@ -208,6 +218,9 @@ void afCameraDistortionPlugin::updateCameraParams()
     GLfloat image_size[] = {m_cameraParams.width, m_cameraParams.height};
     glUniform2fv(glGetUniformLocation(id, "ImageSize"), 1, image_size); 
 
+    GLfloat window_size[] = {static_cast<float>(m_camera->m_width), static_cast<float>(m_camera->m_height)};
+    glUniform2fv(glGetUniformLocation(id, "WindowSize"), 1, window_size); 
+
     glUniform4fv(glGetUniformLocation(id, "RadialDistortion"), 1, m_cameraParams.radial_distortion_coeffs);
     glUniform2fv(glGetUniformLocation(id, "TangentialDistortion"), 1, m_cameraParams.tangential_distortion_coeffs);
 
@@ -244,8 +257,8 @@ void afCameraDistortionPlugin::changeScreenSize(int w, int h)
     glfwSetWindowSize(m_camera->m_window, w, h);
     m_camera->m_width = w;
     m_camera->m_height = h;
-    m_width = m_camera->m_width;
-    m_height = m_camera->m_height;
+    // m_windowWidth = m_camera->m_width;
+    // m_windowHeight = m_camera->m_height;
     glfwSwapInterval(0);
     cerr << "\t Making " << m_camera->getName() << " fullscreen \n" ;
 }
@@ -366,7 +379,7 @@ int afCameraDistortionPlugin::readCameraParams(const string &filename, CameraPar
                 m_cameraParams.aberr_scale[1] << "," << 
                 m_cameraParams.aberr_scale[2] << endl;
 
-        // Whether overlay blackout except for circular viewing region
+        // Whether to overlay blackout except for circular viewing region
         if (!config["blackout"]) {
             cerr << "[CAUTION!] Missing or invalid 'blackout' field." << endl;
             params.blackout = false;
