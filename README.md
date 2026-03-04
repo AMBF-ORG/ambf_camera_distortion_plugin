@@ -8,11 +8,12 @@ Author: Hisashi Ishida(hishida3@jhu.edu)
 Lets call the absolute location of this package as **<plugin_path>**. E.g. if you cloned this repo in your home folder, **<plugin_path>** = `~/ambf_camera_distortion_plugin/` OR `/home/<username>/ambf_camera_distortion_plugin`.
 
 ### 1.1 clone and build 
+For `ROS2`
 ```bash
+cd ros2_ws/src # Go to your ros2 workspace
 git clone git@github.com:AMBF-ORG/ambf_camera_distortion_plugin.git
-cd ambf_camera_distortion_plugin
-mkdir build && cd build
-cmake .. && make -j7
+cd ros2_ws
+colcon build
 ```
 
 ## 2. How to use this plugin

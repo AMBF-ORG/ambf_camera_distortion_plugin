@@ -37,7 +37,7 @@
 #  $Date:  $
 #  $Rev:  $
 
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.3)
 project (camera_distortion_plugin)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -55,6 +55,37 @@ add_library(ambf_camera_distortion_plugin SHARED plugin/camera_distortion_plugin
 target_link_libraries(ambf_camera_distortion_plugin ${AMBF_LIBRARIES})
 set_property(TARGET ambf_camera_distortion_plugin PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 
+if (catkin_FOUND)
+    message ("Found ROS 1")
+else(catkin FOUND)
+    find_package (ament_cmake QUIET)
+    if (ament_cmake_FOUND)
+        set (AMBF_ROS_VERSION 2)
+        message ("Found ROS 2")
+        set (ROS2_depends
+            rclcpp
+            crtk_msgs geometry_msgs sensor_msgs 
+            ambf_msgs ambf_server)
+
+        foreach (_dep ${ROS2_depends})
+            find_package (${_dep} REQUIRED)
+        endforeach()
+
+      # include_directories(include)
+    endif (ament_cmake_FOUND)
+    install (
+    TARGETS ambf_camera_distortion_plugin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+    )
+    ament_target_dependencies (ambf_camera_distortion_plugin ${ROS2_depends})
+    ament_package ()
+
+
+endif(catkin_FOUND)
+
 add_library(ambf_HMD_plugin SHARED plugin/hmd.cpp plugin/hmd.h)
 target_link_libraries(ambf_HMD_plugin ${AMBF_LIBRARIES})
 set_property(TARGET ambf_HMD_plugin PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+
