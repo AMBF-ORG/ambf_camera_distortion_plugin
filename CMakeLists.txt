@@ -63,9 +63,7 @@ else(catkin FOUND)
         set (AMBF_ROS_VERSION 2)
         message ("Found ROS 2")
         set (ROS2_depends
-            rclcpp
-            crtk_msgs geometry_msgs sensor_msgs 
-            ambf_msgs ambf_server)
+            rclcpp)
 
         foreach (_dep ${ROS2_depends})
             find_package (${_dep} REQUIRED)
@@ -88,4 +86,5 @@ endif(catkin_FOUND)
 add_library(ambf_HMD_plugin SHARED plugin/hmd.cpp plugin/hmd.h)
 target_link_libraries(ambf_HMD_plugin ${AMBF_LIBRARIES})
 set_property(TARGET ambf_HMD_plugin PROPERTY POSITION_INDEPENDENT_CODE TRUE)
+
 
