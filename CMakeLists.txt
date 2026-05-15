@@ -55,7 +55,10 @@ add_library(ambf_camera_distortion_plugin SHARED plugin/camera_distortion_plugin
 target_link_libraries(ambf_camera_distortion_plugin ${AMBF_LIBRARIES})
 set_property(TARGET ambf_camera_distortion_plugin PROPERTY POSITION_INDEPENDENT_CODE TRUE)
 
-if (catkin_FOUND)
+find_package (catkin QUIET
+  COMPONENTS ${ROS1_depends})
+
+  if (catkin_FOUND)
     message ("Found ROS 1")
 else(catkin FOUND)
     find_package (ament_cmake QUIET)
@@ -79,8 +82,6 @@ else(catkin FOUND)
     )
     ament_target_dependencies (ambf_camera_distortion_plugin ${ROS2_depends})
     ament_package ()
-
-
 endif(catkin_FOUND)
 
 add_library(ambf_HMD_plugin SHARED plugin/hmd.cpp plugin/hmd.h)
